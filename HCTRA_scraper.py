@@ -19,6 +19,9 @@ FOOTER = '********************************************************************'
 
 # 1. Import built-in modules
 import pandas as pd
+import re
+import string
+import time
 
 # 2. Import third-party modules
 from selenium import webdriver
@@ -82,13 +85,88 @@ def get_ax6(driver, row):
     costs = cez[5].text
     return costs
 
+def roadurl_to_string(url):
+    """ Converts the HCTRA URL for the toll table to a concatenated string of the road name (for CSV filename). """
+    url = url
+    u = re.split("=", url)
+    u = u[1]
+    u = re.split("%20", u)
+    clean = []
+    for item in u:
+        s = item.strip(string.punctuation)
+        clean.append(s)
+    road_name = ""
+    for k in clean:
+        road_name += k
+    return road_name
+
+def direction_to_string(direction):
+    """ Converts the direction to a concatenated string (for CSV filename). """
+    direction = re.split(" ", direction)
+    direct_str = ""
+    for d in direction:
+        direct_str += d
+    return direct_str
+
+
 if __name__ == "__main__":
-    # Input URL for the desired roadway here
+    """
+    ---------------------------- USER INPUTS -----------------------
+    """
+    # Input URL and direction here. Comment out undesired roads
+    # TO DO: Loop through a dictionary of URLs and directions
+
+    # Sam Houston Tollway
     url = "https://www.hctra.org/TollRates?tollRoad=Sam%20Houston%20Tollway"
+    direction = "Clockwise"
+    # direction = "Counter Clockwise"
+
+    # Hardy Toll Road
+    # url = "https://www.hctra.org/TollRates?tollRoad=Hardy%20Toll%20Road"
+    # direction = "North"
+    # direction = "South"
+
+    # Westpark Tollway
+    # url = "https://www.hctra.org/TollRates?tollRoad=Westpark%20Tollway"
+    # direction = "East"
+    # direction = "West"
+
+    # Ft. Bend Extension
+    # url = "https://www.hctra.org/TollRates?tollRoad=Ft.%20Bend%20Extension"
+    # direction = "North"
+    # direction = "South"
+
+    # Tomball Tollway
+    # url = "https://www.hctra.org/TollRates?tollRoad=Tomball%20Tollway"
+    # direction = "North"
+    # direction = "South"
+
+    # SH 242
+    # url = "https://www.hctra.org/TollRates?tollRoad=SH%20242"
+    # direction = "Off Peak hours"
+    # direction = "Peak hours"
+
+    """
+    --------------------------- END USER INPUTS --------------------
+    """
+    print(HEADER)
+    print('HCTRA Toll Rate Web Scraper')
+    print(__author__)
+    print(__copyright__)
+    print(__license__)
+    print(__version__)
+    print(HEADER)
     driver = webdriver.Chrome()
     driver.get(url)
+    time.sleep(1)
     driver.find_element_by_xpath('//*[@id="directionSelect"]').click()
-    driver.find_element_by_xpath("//*[contains(text(), 'Clockwise')]").click()
+    time.sleep(1)
+    dxp1 = "//*[contains(text(), '"
+    dxp2 = "')]"
+    direction_xpath = dxp1 + direction + dxp2
+    driver.find_element_by_xpath(direction_xpath).click()
+    time.sleep(1)
+    #driver.find_element_by_xpath("//*[contains(text(), 'Clockwise')]").click()
     table = driver.find_elements_by_xpath('//*[@id="travel-tools-rates"]/div/div[3]/div/div/div/table/tbody/tr')
 
     # Get the number of rows in the table
@@ -160,7 +238,11 @@ if __name__ == "__main__":
                          ax4_df,
                          ax5_df,
                          ax6_df], axis=1)
-    results.to_csv('results.csv')
+    # Create filename for CSV file
+    filename_road = roadurl_to_string(url)
+    filename_direction = direction_to_string(direction)
+    filename = "Tolls_" + filename_road + "_" + filename_direction + ".csv"
+    results.to_csv(filename)
     print(FOOTER)
     print('Program complete and results printed to .csv file!')
     print(FOOTER)
